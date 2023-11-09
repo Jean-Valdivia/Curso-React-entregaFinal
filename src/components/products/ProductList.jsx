@@ -1,6 +1,4 @@
 import { CircularProgress, Grid, Typography } from "@mui/material";
-import useAsyncMock from "../../hooks/UseAsyncMock";
-import products from '../../mocks/products.json';
 import ProductDetail from "./ProductDetail"; 
 import { useState , useEffect } from "react";
 import { collection, getDocs, getFirestore } from "firebase/firestore";
@@ -9,7 +7,6 @@ import { collection, getDocs, getFirestore } from "firebase/firestore";
 const ProductList = () => {
     const [ data, setData] =useState();
     const [ loading, setLoading ] = useState(true);
-    const [ error, setError ] = useState("");
 
     useEffect(() =>{
         const fetchData = async () => {
@@ -17,7 +14,7 @@ const ProductList = () => {
             const querySnapshot = await getDocs(collection(db, "products"))
             const newData = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
             setData(newData)
-            loading(false)
+            setLoading(false)
         }
         
         fetchData()
