@@ -1,28 +1,42 @@
 import { Card, CardContent, CircularProgress, Typography } from "@mui/material";
-import useAsyncMock from "../../hooks/UseAsyncMock";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { collection, getDocs, getFirestore } from "firebase/firestore";
 
 const Categories = () => {
-    const { data, loading } = useAsyncMock(categories)
+    const [categorias, setCategorias] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    if (loading) return <CircularProgress />
+    useEffect(() => {
+        const fetchCategories = async () => {
+                const db = getFirestore();
+                const querySnapshot = await getDocs(collection(db, "categorias"))
+                const newCategoriesData = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+                setCategorias(newCategoriesData)
+                setLoading(false)
+        }
 
-    return (<div className="container">
-        <Typography variant="h2" sytle={{ color: "green" }}>
-            Categorias
-        </Typography>
-        {
-            data.map((category) => {
-                return (
-                    <Card key={category.id}>
-                        <CardContent component={Link} to={`/category/${category.category}`}>
-                            <Typography >{category.category}</Typography>
+        fetchCategories();
+    }, []);
+
+    if (loading) return <CircularProgress />;
+
+    return (
+        <div className="container">
+            <Typography variant="h2" style={{ color: "red" }}>
+                Categorías
+            </Typography>
+            {
+                categorias.map((categoria) => (
+                    <Card key={categoria.id}>
+                        <CardContent component={Link} to={`/category/${categoria.category}`}>
+                            <Typography variant="h5" style={{ color: "blue" }}>{categoria.category}</Typography>
                         </CardContent>
                     </Card>
-                )
-            })
-        }
-    </div>);
+                ))
+            }
+        </div>
+    );
 }
 
 export default Categories;

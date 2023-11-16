@@ -6,6 +6,25 @@ import Typography from '@mui/material/Typography';
 import { useCartContext } from '../../context/CartContext';
 import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore';
 
+const ConfirmOrder = ({ orderData }) => {
+    if (orderData === null) {
+        return <div>Complete los datos, Por favor...</div>;
+    }
+
+    return (
+        <div>
+            <Typography variant="h6" gutterBottom>
+                Resumen de la orden:
+            </Typography>
+            <div>
+                <p>Nombre: {orderData.customer.name}</p>
+                <p>Dirección de envío: {orderData.shipping.address}, {orderData.shipping.city}, {orderData.shipping.province}</p>
+                <p>Orden Enviada al sistema!</p>
+            </div>
+        </div>
+    );
+};
+
 const Form = () => {
     const [formData, setFormData] = useState({
         'Nombre/s': '',
@@ -22,31 +41,10 @@ const Form = () => {
     const { cart, clearCart } = useCartContext();
     const [orderData, setOrderData] = useState(null);
 
-    const ConfirmOrder = ({ orderData }) => {
-        if (orderData === null) {
-            return <div>Cargando la orden...</div>;
-        }
-    
-        return (
-            <div>
-            <Typography variant="h6" gutterBottom>
-                Resumen de la orden:
-            </Typography>
-            <div>
-                <p>Nombre: {orderData.customer.name}</p>
-                <p>Dirección de envío: {orderData.shipping.address}, {orderData.shipping.city}, {orderData.shipping.province}</p>
-                <p>Total de la orden: ${orderData.total}</p>
-            </div>
-        </div>
-        );
-    };
-
     const handleFormSubmit = async (e) => {
         e.preventDefault();
-        const totalPedido = cart.items.reduce((total, item) => {
-            return total + item.product.price * item.quantity;
-        }, 0);
-    
+        const totalPedido = cart.total.toFixed(2);
+
         const newOrderData = {
             customer: {
                 name: formData['Nombre/s'],
@@ -65,25 +63,21 @@ const Form = () => {
             total: totalPedido,
             timestamp: Timestamp.fromDate(new Date()),
         };
-    
-        const result = await addDoc(collection(db, 'orders'), newOrderData);
-    
-        if (result.exists) {
+
+        const db = getFirestore();
+
+        try {
+            const docRef = await addDoc(collection(db, 'orders'), newOrderData);
+            console.log('Orden enviada con ID:', docRef.id);
             setOrderData(newOrderData);
-        } else {
+        } catch (error) {
+            console.error('Error al enviar la orden:', error);
             setOrderData(null);
             alert('Error al enviar la orden');
         }
 
-        setOrderData(newOrderData);
-
-        const db = getFirestore();
-        try {
-            const docRef = await addDoc(collection(db, 'orders'), newOrderData);
-            console.log('Orden enviada con ID: ', docRef.id);
-        } catch (error) {
-            console.error('Error al enviar la orden: ', error);
-        }
+        // Limpia el carrito después de enviar la orden
+        clearCart();
 
         setFormData({
             'Nombre/s': '',
@@ -224,7 +218,7 @@ const Form = () => {
             </div>
             <ConfirmOrder orderData={orderData} />
             <Button type="submit" variant="contained">Enviar orden</Button>
-            <Button onClick={handleCancel} variant="outlined">Cancelar todo</Button>
+            <Button onClick={handleCancel} variant="outlined">Reiniciar datos</Button>
         </Box>
     );
 };
